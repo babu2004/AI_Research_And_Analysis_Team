@@ -1,58 +1,57 @@
 
 from ddgs import DDGS
+from ddgs.exceptions import DDGSException
+import time
 
 
 def search_web(query: str, max_results: int = 5) -> list[dict]:
-    """
-    Search the web and return clean, unique results.
-    """
 
     if not query.strip():
         raise ValueError("Search query cannot be empty.")
 
-    results = DDGS().text(
-        query,
-        max_results=max_results * 2
-    )
+    for attempt in range(1, 4):
 
-    findings = []
-    seen_urls = set()
+        try:
+            print(f"[WEB SEARCH] Attempt {attempt}/3")
 
-    for result in results:
+            results = DDGS().text(
+                query,
+                max_results=max_results * 2
+            )
 
-        title = result.get("title", "").strip()
-        content = result.get("body", "").strip()
-        source = result.get("href", "").strip()
+            findings = []
+            seen_urls = set()
 
-        if not title or not content or not source:
-            continue
+            for result in results:
 
-        if source in seen_urls:
-            continue
+                title = result.get("title", "").strip()
+                content = result.get("body", "").strip()
+                source = result.get("href", "").strip()
 
-        seen_urls.add(source)
+                if not title or not content or not source:
+                    continue
 
-        findings.append({
-            "title": title,
-            "content": content,
-            "source": source
-        })
+                if source in seen_urls:
+                    continue
 
-        if len(findings) >= max_results:
-            break
+                seen_urls.add(source)
 
-    return findings
+                findings.append({
+                    "title": title,
+                    "content": content,
+                    "source": source
+                })
 
+                if len(findings) >= max_results:
+                    break
 
-if __name__ == "__main__":
+            if findings:
+                return findings
 
-    results = search_web(
-        "Electric vehicle growth in India",
-        max_results=5
-    )
+        except DDGSException as error:
+            print(f"[WEB SEARCH WARNING] {error}")
 
-    for index, result in enumerate(results, start=1):
-        print(f"\n--- Result {index} ---")
-        print("Title:", result["title"])
-        print("Content:", result["content"])
-        print("Source:", result["source"])
+        if attempt < 3:
+            time.sleep(attempt * 2)
+
+    raise RuntimeError("Web search failed after 3 attempts.")

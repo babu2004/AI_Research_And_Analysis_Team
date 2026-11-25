@@ -1,7 +1,7 @@
 
 from agents.research_state import ResearchState
 from tools.web_search import search_web
-
+from agents.evidence_extractor import extract_research_findings
 
 def research_node(state: ResearchState) -> dict:
     """
@@ -13,12 +13,13 @@ def research_node(state: ResearchState) -> dict:
     try:
         print(f"\n[RESEARCH AGENT] Researching: {topic}")
 
-        findings = search_web(topic, max_results=5)
+        search_results = search_web(topic, max_results=5)
+
+        findings = extract_research_findings(topic, search_results)
 
         if not findings:
-            raise ValueError("No search results found.")
+            raise ValueError("No valid research findings extracted.")
 
-        print(f"[RESEARCH AGENT] Retrieved {len(findings)} results.")
 
         return {
             "research_findings": findings,
